@@ -42,4 +42,16 @@ public class Algorithm {
         return null;
     }
 
+    public static LL1Table generateLL1Table(Syntax syntax) {
+
+
+        return null;
+    }
+
+    public static LR1Table generateLR1Table(Syntax syntax) {
+
+
+        return null;
+    }
+
 }
