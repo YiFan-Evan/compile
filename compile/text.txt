@@ -1,0 +1,162 @@
+program -> compoundstmt
+stmt ->  ifstmt  |  whilestmt  |  assgstmt  |  compoundstmt
+compoundstmt ->  { stmts }
+stmts ->  stmt stmts   |   E
+ifstmt ->  if ( boolexpr ) then stmt else stmt
+whilestmt ->  while ( boolexpr ) stmt
+assgstmt ->  ID = arithexpr ;
+boolexpr  ->  arithexpr boolop arithexpr
+boolop ->   <  |  >  |  <=  |  >=  | ==
+arithexpr  ->  multexpr arithexprprime
+arithexprprime ->  + multexpr arithexprprime  |  - multexpr arithexprprime  |   E
+multexpr ->  simpleexpr  multexprprime
+multexprprime ->  * simpleexpr multexprprime  |  / simpleexpr multexprprime  |   E
+simpleexpr ->  ID  |  NUM  |  ( arithexpr )
+
+借记表：
+program | A
+stmt | B
+compoundstmt | C
+stmts | D
+ifstmt | E
+whilestmt | F
+assgstmt | G
+boolexpr | H
+boolop | I
+arithexpr | J
+arithexprprime | K
+multexpr | L
+multexprprime | M
+simpleexpr | N
+
+替换结果：
+A ->  C
+B ->  E  |  F  |  G  |  C
+C ->  { D }
+D ->  B D   |   ε
+E ->  if ( H ) then B else B
+F ->  while ( H ) B
+G ->  ID = J ;
+H ->  J I J
+I ->  <  |  >  |  <=  |  >=  | ==
+J ->  L K
+K ->  + L K  |  - L K  |   ε
+L ->  N  M
+M ->  * N M  |  / N M  |   ε
+N ->  ID  |  NUM  |  ( J )
+
+非终结符：
+A B C D E F G H I J K L M N
+终结符：
+{ } if ( ) then else while ID = > < >= <= == + - * / NUM ;
+起始符：
+A
+
+FIRST集：
+first(A)={{}
+first(B)={if,while,ID,{}
+first(C)={{}
+first(D)={if,while,ID,{,ε}
+first(E)={if}
+first(F)={while}
+first(G)={ID}
+first(H)={ID,NUM,(}
+first(I)={<,>,<=,>=,==}
+first(J)={ID,NUM,(}
+first(K)={+,-,ε}
+first(L)={ID,NUM,(}
+first(M)={*,/,ε}
+first(N)={ID,NUM,(}
+
+FOLLOW集：
+follow(A)={#}
+follow(B)=first(D) U follow(E) U follow(F) U {else}={if,while,ID,{,else}
+follow(C)={if,while,ID,{,else,#}
+follow(D)={}}
+follow(E)=follow(B)={if,while,ID,{,else}
+follow(F)=follow(B)={if,while,ID,{,else}
+follow(G)=follow(B)={if,while,ID,{,else}
+follow(H)={)}
+follow(I)=first(J)={ID,NUM,(}
+follow(J)=first(I) U follow(H) U {)} U {;}={<,>,<=,>=,==,),;}
+follow(K)=follow(J)={<,>,<=,>=,==,),;}
+follow(L)=first(K) U follow(K) U follow(J)={<,>,<=,>=,==,),;,+,-}
+follow(M)=follow(L)={<,>,<=,>=,==,),;,+,-}
+follow(N)=first(M) U follow(M) U follow(L)={<,>,<=,>=,==,),;,+,-,*,/}
+
+parsing table构建:
+A ->  C，由于first(C)={{}，所以将该式加入M[A,{]
+B ->  E，由于first(E)={if}，所以将该式加入M[B,if]
+B ->  F，由于first(F)={while}，所以将该式加入M[B,while]
+B ->  G，由于first(G)={ID}，所以将该式加入M[B,ID]
+B ->  C，由于first(C)={{}，所以将该式加入M[B,{]
+C ->  { D }，由于first({ D })={{}，所以将该式加入M[C,{]
+D ->  B D，由于first(B)={if,while,ID,{}，所以将该式加入M[D,if]、M[D,while]、M[D,ID]、M[D,{]
+D ->  ε，由于first(ε)={ε}，此时看follow(D)={}}，所以将该式加入M[D,}]
+E ->  if ( H ) then B else B，由于first(if ( H ) then B else B)={if}，所以将该式加入M[E,if]
+F ->  while ( H ) B，由于first(while ( H ) B)={while}，所以将该式加入M[F,while]
+G ->  ID = J ;，由于first(ID = J ;)={ID}，所以将该式加入M[G,ID]
+H ->  J I J，由于first(J I J)={ID,NUM,(}，所以将该式加入M[H,ID]、M[H,NUM]、M[H,(]
+I ->  <，由于first(<)={<}，所以将该式加入M[I,<]
+I ->  >，由于first(>)={>}，所以将该式加入M[I,>]
+I ->  <=，由于first(<=)={<=}，所以将该式加入M[I,<=]
+I ->  >=，由于first(>=)={>=}，所以将该式加入M[I,>=]
+I ->  ==，由于first(==)={==}，所以将该式加入M[I,==]
+J ->  L K，由于first(L K)={ID,NUM,(}，所以将该式加入M[J,ID]、M[J,NUM]、M[J,(]
+K ->  + L K，由于first(+ L K)={+}，所以将该式加入M[K,+]
+K ->  - L K，由于first(- L K)={-}，所以将该式加入M[K,-]
+K ->  ε，由于first(ε)={ε}，此时看follow(K)={<,>,<=,>=,==,),;}，所以将该式加入M[K,<]、M[K,>]、M[K,<=]、M[K,>=]、M[K,==]、M[K,)]、M[K,;]
+L ->  N  M，由于first(N  M)={ID,NUM,(}，所以将该式加入M[L,ID]、M[L,NUM]、M[L,(]
+M ->  * N M，由于first(* N M)={*}，所以将该式加入M[M,*]
+M ->  / N M，由于first(/ N M)={/}，所以将该式加入M[M,/]
+M ->  ε，由于first(ε)={ε}，此时看follow(M)={<,>,<=,>=,==,),;,+,-}，所以将该式加入M[M,<]、M[M,>]、M[M,<=]、M[M,>=]、M[M,==]、M[M,)]、M[M,;]、M[M,+]、M[M,-]
+N ->  ID，由于first(ID)={ID}，所以将该式加入M[N,ID]
+N ->  NUM，由于first(NUM)={NUM}，所以将该式加入M[N,NUM]
+N ->  ( J )，由于first(( J ))={(}，所以将该式加入M[N,(]
+
+拆分式子
+A ->  C
+B ->  E
+B ->  F
+B ->  G
+B ->  C
+C ->  { D }
+D ->  B D
+D ->  ''
+E ->  if ( H ) then B else B
+F ->  while ( H ) B
+G ->  ID = J ;
+H ->  J I J
+I ->  <
+I ->  >
+I ->  <=
+I ->  >=
+I ->  ==
+J ->  L K
+K ->  + L K
+K ->  - L K
+K ->  ''
+L ->  N  M
+M ->  * N M
+M ->  / N M
+M ->  ''
+N ->  ID
+N ->  NUM
+N ->  ( J )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
