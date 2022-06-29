@@ -87,13 +87,12 @@ public class Algorithm {
         return table;
     }
 
-    public static HashSet<Production> calClosure(){
+    public static HashSet<LR1Production> calClosure(Syntax syntax, LR1Production production) {
         return null;
     }
 
     public static LR1Table generateLR1Table(Syntax syntax) {
-
-
+        
         return null;
     }
 

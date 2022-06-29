@@ -39,6 +39,7 @@ public class CompileTest {
             "N -> NUM\n" +
             "N -> ( J )";
 
+
     @Test
     public void testSyntax() {
         Syntax syntax = new Syntax(input);
