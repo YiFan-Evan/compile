@@ -1,8 +1,5 @@
-import jdk.swing.interop.SwingInterOpUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Algorithm {
 
@@ -88,12 +85,90 @@ public class Algorithm {
     }
 
     public static HashSet<LR1Production> calClosure(Syntax syntax, LR1Production production) {
-        return null;
+        HashSet<LR1Production> lr1Productions = new HashSet<>();
+        Queue<LR1Production> queue = new LinkedList<>();
+        lr1Productions.add(production);
+        queue.add(production);
+        while (!queue.isEmpty()) {
+            LR1Production lr1Production = queue.poll();
+            if(lr1Production.dotNextIsNonTerminal()){
+                for(int i=1;i<=syntax.productions.size();i++){
+                    if(syntax.productions.get(i-1).left.equals(lr1Production.getDotNext())){
+                        int finalI = i;
+                        lr1Production.ifIsNonTerminalThenGetFirst(syntax).forEach(terminal ->
+                        {
+                            LR1Production newOne = new LR1Production(syntax.productions.get(finalI - 1), finalI, terminal);
+                            if(!lr1Productions.contains(newOne)){
+                                lr1Productions.add(newOne);
+                                queue.add(newOne);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        return lr1Productions;
     }
 
     public static LR1Table generateLR1Table(Syntax syntax) {
-        
-        return null;
+        LR1Table table = new LR1Table(syntax);
+        NonTerminal startSymbol = syntax.startSymbol;
+        NonTerminal start = new NonTerminal(startSymbol.name + "#");
+        Queue<LR1State> queue = new LinkedList<>();
+        AtomicInteger stateIndex = new AtomicInteger();
+        LR1State startState = new LR1State(stateIndex.get(),
+                new HashSet<>(Set.of(
+                        new LR1Production(
+                                new Production(start,
+                                        new ArrayList<>(List.of(startSymbol))),
+                                0, Terminal.end))), syntax);
+        table.states.add(startState);
+        queue.add(startState);
+        while (!queue.isEmpty()) {
+            LR1State next = queue.poll();
+            HashMap<Symbol, HashSet<LR1Production>> map = new HashMap<>();
+            for (LR1Production production : next.postProductions){
+                if(!production.isEnd()){
+                    Symbol dotNext = production.getDotNext();
+                    if(map.containsKey(dotNext)){
+                        map.get(dotNext).add(production.toNext());
+                    } else {
+                        HashSet<LR1Production> productions = new HashSet<>();
+                        productions.add(production.toNext());
+                        map.put(dotNext, productions);
+                    }
+                }else{
+                    table.table.putIfAbsent(production.lookAHead, new HashMap<>());
+                    table.table.get(production.lookAHead).put(next.index, "r"+production.productionIndex);
+                }
+            }
+            map.forEach((key, value) -> {
+                LR1State toState = null;
+                for (LR1State state : table.states) {
+                    if(state.preProductions.equals(value)){
+                        toState = state;
+                        break;
+                    }
+                }
+                if(toState == null){
+                    stateIndex.getAndIncrement();
+                    toState = new LR1State(stateIndex.get(), value, syntax);
+                    table.states.add(toState);
+                    queue.add(toState);
+                }
+                table.gotos.add(new LR1Goto(next, toState, key));
+            });
+        }
+        table.gotos.forEach(edge -> {
+            if(edge.symbol instanceof NonTerminal){
+                table.table.putIfAbsent(edge.symbol, new HashMap<>());
+                table.table.get(edge.symbol).put(edge.from.index, ""+edge.to.index);
+            }else{
+                table.table.putIfAbsent(edge.symbol, new HashMap<>());
+                table.table.get(edge.symbol).put(edge.from.index, "s"+edge.to.index);
+            }
+        });
+        return table;
     }
 
 }
